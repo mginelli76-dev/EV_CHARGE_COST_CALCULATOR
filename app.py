@@ -7,11 +7,6 @@ image = Image.open('logo MGY social.jpg')
 # 2. Visualizzala (puoi regolare la larghezza con width)
 st.image(image, width=200)
 
-# Segue il resto del tuo codice...
-st.title("EV_CHARGE_COST_CALCULATOR")
-# Configurazione pagina
-st.set_page_config(page_title="Inster Smart Calc", page_icon="⚡")
-
 st.title("⚡ EV CHARGE COST CALCULATOR powered by MGY")
 st.write("Real Efficency Calculator - Calcolatore ricarica EV con efficienza reale offerto da MGY")
 
@@ -58,6 +53,7 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         - Payed Energy - Energia pagata ({int(eff*100)}% eff): {kwh_pagati:.2f} kWh
 
         """)
+
 
 
 
