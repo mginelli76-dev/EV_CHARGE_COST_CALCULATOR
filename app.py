@@ -11,7 +11,7 @@ cap = st.number_input("Capacità Batteria (kWh)", value=49.0, step=1.0)
 
 # 2. Selezione Profilo
 profilo = st.selectbox("Type - Tipo di ricarica", 
-                      ["Charging Station - Colonnina (0.81€ - 92% eff.)", "Home - Casa (0.25€ - 85% eff.)"])
+                      ["Charging Station - Colonnina (92% eff.)", "Home - Casa (85% eff.)"])
 
 # Imposta valori in base al profilo
 if "Charging Station - Colonnina" in profilo:
@@ -49,3 +49,4 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         - Energia pagata ({int(eff*100)}% eff): {kwh_pagati:.2f} kWh
 
         """)
+
