@@ -45,10 +45,11 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         
         st.info(f"""
         **Dettagli Tecnici:**
-        - Energy enter - Energia immessa: {kwh_netti:.2f} kWh
+        - Net Energy - Energia netta: {kwh_netti:.2f} kWh
         - Payed Energy - Energia pagata ({int(eff*100)}% eff): {kwh_pagati:.2f} kWh
 
         """)
+
 
 
 
