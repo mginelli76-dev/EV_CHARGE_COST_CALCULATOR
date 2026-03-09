@@ -1,6 +1,17 @@
 import streamlit as st
 from PIL import Image
 
+# Crea una barra laterale
+with st.sidebar:
+    st.title("Seguimi sui Social")
+    st.write("Resta aggiornato sui miei test sulla Hyundai Inster:")
+    
+    # Link ai tuoi canali (sostituisci gli URL con i tuoi veri link)
+    st.link_button("YouTube 📺", "https://youtube.com/@mginelli76?si=iuRHNZE4UOnIbivr")
+    st.link_button("Instagram 📸", "https://instagram.com/ocramgy/")
+    st.link_button("TikTok 🎵", "https://www.tiktok.com/@ocramgy76?lang=en")
+    st.link_button("Facebook 📺", "https://facebook.com/marcoginelli")
+  
 # 1. Carica l'immagine dal tuo repository
 image = Image.open('logo MGY social.jpg')
 
@@ -53,6 +64,7 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         - Payed Energy - Energia pagata ({int(eff*100)}% eff): {kwh_pagati:.2f} kWh
 
         """)
+
 
 
 
