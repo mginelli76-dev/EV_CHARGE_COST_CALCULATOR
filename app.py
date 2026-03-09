@@ -22,7 +22,7 @@ else:
     eff = 0.85
 
 # 3. Altri Input
-prezzo = st.number_input("Real Price - Prezzo reale (€/kWh)", value=prezzo_default, format="%.2f")
+prezzo = st.number_input("Real Price - Inserire Costo reale (€/kWh)", value=prezzo_default, format="%.2f")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -45,8 +45,9 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         
         st.info(f"""
         **Dettagli Tecnici:**
-        - Energia in batteria: {kwh_netti:.2f} kWh
-        - Energia pagata ({int(eff*100)}% eff): {kwh_pagati:.2f} kWh
+        - Energy on battery - Energia in Batteria: {kwh_netti:.2f} kWh
+        - Payed Energy - Energia pagata ({int(eff*100)}% eff): {kwh_pagati:.2f} kWh
 
         """)
+
 
