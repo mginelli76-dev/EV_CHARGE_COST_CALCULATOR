@@ -3,7 +3,7 @@ import streamlit as st
 # Configurazione pagina
 st.set_page_config(page_title="Inster Smart Calc", page_icon="⚡")
 
-st.title("⚡ EV CHARGE COST CALCULATOR - Calcola Costo Ricarica")
+st.title("⚡ EV CHARGE COST CALCULATOR by MGY - Calcola Costo Ricarica offerto da MGY")
 st.write("Calcolatore ricarica EV con efficienza reale")
 
 # 1. Input Capacità Batteria
@@ -49,6 +49,7 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         - Payed Energy - Energia pagata ({int(eff*100)}% eff): {kwh_pagati:.2f} kWh
 
         """)
+
 
 
 
