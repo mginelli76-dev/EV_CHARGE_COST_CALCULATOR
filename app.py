@@ -26,7 +26,7 @@ prezzo = st.number_input("Real Price - Inserire Costo reale (€/kWh)", value=pr
 
 col1, col2 = st.columns(2)
 with col1:
-    inizio = st.number_input("Battery Level Start - Batteria Inizio (%)", value=44, min_value=0, max_value=100)
+    inizio = st.number_input("Battery Level Start - Batteria Inizio (%)", value=20, min_value=0, max_value=100)
 with col2:
     fine = st.number_input("Battery Level End - Batteria Fine (%)", value=80, min_value=0, max_value=100)
 
@@ -49,6 +49,7 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         - Payed Energy - Energia pagata ({int(eff*100)}% eff): {kwh_pagati:.2f} kWh
 
         """)
+
 
 
 
