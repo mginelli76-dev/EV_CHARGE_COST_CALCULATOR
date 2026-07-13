@@ -61,35 +61,30 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True, key="btn_u
     if fine <= inizio:
         st.error("La percentuale finale deve essere maggiore!")
     else:
+        # 1. Calcolo Energia e Costi
         kwh_netti = ((fine - inizio) / 100) * cap
         kwh_pagati = kwh_netti / eff
         costo = kwh_pagati * prezzo
 
+        # Limite hardware AC della vettura
         kw_ricarica = 11.00 if "22.00 kW" in profilo else kw
         kw_reali = kw_ricarica * eff
 
-        # Calcolo del tempo diviso in due fasi reali
-        ore_totali = 0.0
+        # 2. Tempo base lineare puro
+        ore_totali = kwh_netti / kw_reali
 
-        # Fase 1: ricarica lineare fino all'80%
-        if inizio < 80:
-            fine_lineare = min(80, fine)
-            kwh_lineari = ((fine_lineare - inizio) / 100) * cap
-            ore_totali += kwh_lineari / kw_reali
-
-        # Fase 2: crollo drastico della potenza dal 80% al 100%
+        # 3. Aggiunta minuti di rallentamento fisso oltre l'80% (proporzionale a quanti punti percentuali si fanno sopra l'80)
         if fine > 80:
-            inizio_fase2 = max(80, inizio)
-            quota_fase2 = (fine - inizio_fase2) / 100
-            kwh_fase2 = quota_fase2 * cap
+            punti_oltre_80 = fine - max(80, inizio)
             
             if kw_ricarica <= 22.0:
-                # In AC la potenza finale cala drasticamente a prescindere dai kW di picco iniziali
-                potenza_media_finale = min(kw_reali * 0.35, 1.25) 
-                ore_totali += kwh_fase2 / potenza_media_finale
+                # In AC aggiunge un extra proporzionale (circa 50 min totali per la fascia 80-100%)
+                ore_totali += (punti_oltre_80 / 20) * 0.84
             else:
-                ore_totali += (kwh_fase2 / kw_reali) * 2.5
+                # In DC il bilanciamento finale è molto più penalizzante
+                ore_totali += (punti_oltre_80 / 20) * 1.2
 
+        # Conversione finale
         minuti_totali = int(round(ore_totali * 60))
         ore = minuti_totali // 60
         minuti = minuti_totali % 60
