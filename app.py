@@ -16,25 +16,27 @@ except:
     pass
 
 st.title("EV CHARGE COST & TIME CALCULATOR powered by MGY")
-st.write("Real Efficiency & Time Calculator - Calcolatore ricarica EV con efficienza e tempi reali offerto da MGY")
+st.write("Real Efficiency & Time Calculator - Calcolatore ricarica EV con efficienza e tempi reali offerto by MGY")
 
 cap = st.number_input("Capacita Batteria (kWh)", value=49.0, step=1.0, key="cap_unique_input")
 
+# Mappatura dei profili ricarica con le nuove logiche di prezzo di default richieste
 profili_data = {
-    "Domestica 6A (~1.38 kW) - Eff. 85.5% (Schuko)": {"kw": 1.38, "eff": 0.855, "prezzo": 0.192},
-    "Domestica 8A (~1.84 kW) - Eff. 89.1% (Schuko)": {"kw": 1.84, "eff": 0.891, "prezzo": 0.192},
+    "Domestica 6A (~1.38 kW) - Eff. 85.5%": {"kw": 1.38, "eff": 0.855, "prezzo": 0.192},
+    "Domestica 8A (~1.84 kW) - Eff. 89.1%": {"kw": 1.84, "eff": 0.891, "prezzo": 0.192},
     "Domestica 10A (~2.30 kW) - Eff. 91.3% (Schuko)": {"kw": 2.30, "eff": 0.913, "prezzo": 0.192},
-    "Domestica 12A (~2.76 kW) - Eff. 92.7%  (Schuko)": {"kw": 2.76, "eff": 0.927, "prezzo": 0.192},
+    "Domestica 12A (~2.76 kW) - Eff. 92.7% (Benchmark MGY)": {"kw": 2.76, "eff": 0.927, "prezzo": 0.192},
     "Domestica 16A (~3.70 kW) - Eff. 92.7% (Limite contatore 3 kW)": {"kw": 3.70, "eff": 0.927, "prezzo": 0.192},
-    "Domestica/Wallbox 32A (~7.40 kW) - Eff. 92.0% (Contatore 6+ kW)": {"kw": 7.40, "eff": 0.920, "prezzo": 0.192},
-    "Pubblica Standard 16A Trifase (~11.00 kW) - Eff. 92.0%": {"kw": 11.00, "eff": 0.920, "prezzo": 0.65},
-    "Pubblica Accelerata 32A Trifase (~22.00 kW) - Eff. 92.0%": {"kw": 22.00, "eff": 0.920, "prezzo": 0.69},
-    "Fast DC (50 kW) - Eff. 95.0%": {"kw": 50.00, "eff": 0.950, "prezzo": 0.85},
-    "Ultra-Fast DC (100 kW) - Eff. 95.0%": {"kw": 100.00, "eff": 0.950, "prezzo": 0.89},
-    "Ultra-Fast DC (150+ kW) - Eff. 95.0%": {"kw": 150.00, "eff": 0.950, "prezzo": 0.89}
+    "Domestica/Wallbox 32A (~7.40 kW) - Eff. 92.0% (Contatore 6+ kW)": {"kw": 7.40, "eff": 0.920, "prezzo": 0.70},
+    "Pubblica Standard 16A Trifase (~11.00 kW) - Eff. 92.0%": {"kw": 11.00, "eff": 0.920, "prezzo": 0.70},
+    "Pubblica Accelerata 32A Trifase (~22.00 kW) - Eff. 92.0%": {"kw": 22.00, "eff": 0.920, "prezzo": 0.70},
+    "Fast DC (50 kW) - Eff. 95.0%": {"kw": 50.00, "eff": 0.950, "prezzo": 0.70},
+    "Ultra-Fast DC (100 kW) - Eff. 95.0%": {"kw": 100.00, "eff": 0.950, "prezzo": 0.70},
+    "Ultra-Fast DC (150+ kW) - Eff. 95.0%": {"kw": 150.00, "eff": 0.950, "prezzo": 0.70}
 }
 
-profilo = st.selectbox("Seleziona il tipo di ricarica", list(profili_data.keys()), index=3, key="profilo_unique_select")
+# index=1 corrisponde al profilo Domestica 8A (secondo elemento della lista)
+profilo = st.selectbox("Seleziona il tipo di ricarica", list(profili_data.keys()), index=1, key="profilo_unique_select")
 
 kw = profili_data[profilo]["kw"]
 eff = profili_data[profilo]["eff"]
@@ -73,12 +75,11 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True, key="btn_u
         # 2. Tempo base lineare puro
         ore_totali = kwh_netti / kw_reali
 
-        # 3. Rallentamento calibrato al millimetro oltre l'80%
+        # 3. Rallentamento calibrato oltre l'80%
         if fine > 80:
             punti_oltre_80 = fine - max(80, inizio)
             
             if kw_ricarica <= 22.0:
-                # Regolato per centrare le 6h esatte su 74% -> 100%
                 ore_totali += (punti_oltre_80 / 20) * 1.02
             else:
                 ore_totali += (punti_oltre_80 / 20) * 1.2
