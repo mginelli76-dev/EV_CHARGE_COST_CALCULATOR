@@ -20,7 +20,6 @@ st.write("Real Efficiency & Time Calculator - Calcolatore ricarica EV con effici
 
 cap = st.number_input("Capacita Batteria (kWh)", value=49.0, step=1.0, key="cap_unique_input")
 
-# Mappatura esatta dei profili ricarica
 profili_data = {
     "Domestica 6A (~1.38 kW) - Eff. 85.5%": {"kw": 1.38, "eff": 0.855, "prezzo": 0.192},
     "Domestica 8A (~1.84 kW) - Eff. 89.1%": {"kw": 1.84, "eff": 0.891, "prezzo": 0.192},
@@ -67,24 +66,24 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True, key="btn_u
         kwh_pagati = kwh_netti / eff
         costo = kwh_pagati * prezzo
 
-        # Limite hardware di bordo
+        # Limite hardware AC della vettura
         kw_ricarica = 11.00 if "22.00 kW" in profilo else kw
         kw_reali = kw_ricarica * eff
 
-        # 2. Calcolo del Tempo lineare pure
+        # 2. Tempo base lineare puro
         ore_totali = kwh_netti / kw_reali
 
-        # 3. Bilanciamento calibrato per la curva di rallentamento finale oltre l'80%
+        # 3. Rallentamento calibrato al millimetro oltre l'80%
         if fine > 80:
-            quota_critica = (fine - max(80, inizio)) / 100
-            kwh_finali = quota_critica * cap
+            punti_oltre_80 = fine - max(80, inizio)
+            
             if kw_ricarica <= 22.0:
-                # Calibrato per riflettere le 6h stimate dall'auto (da 74% a 100%)
-                ore_totali += (kwh_finali / cap) * 2.6
+                # Regolato per centrare le 6h esatte su 74% -> 100%
+                ore_totali += (punti_oltre_80 / 20) * 1.02
             else:
-                ore_totali += (kwh_finali / kw_reali) * 1.5
+                ore_totali += (punti_oltre_80 / 20) * 1.2
 
-        # Conversione finale al minuto senza errori di denominazione
+        # Conversione finale
         minuti_totali = int(round(ore_totali * 60))
         ore = minuti_totali // 60
         minuti = minuti_totali % 60
