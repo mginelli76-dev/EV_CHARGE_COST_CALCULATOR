@@ -1,5 +1,5 @@
 import streamlit as st
-from PIL import Image
+from PIL Image import Image
 
 with st.sidebar:
     st.title("Seguimi sui Social")
@@ -22,10 +22,10 @@ cap = st.number_input("Capacita Batteria (kWh)", value=49.0, step=1.0)
 
 # Menu unico con tutti i profili richiesti
 opzioni_profilo = [
-    "Domestica 6A (~1.38 kW) - Eff. 85.5% (Schuko)",
-    "Domestica 8A (~1.84 kW) - Eff. 89.1% (Schuko)",
+    "Domestica 6A (~1.38 kW) - Eff. 85.5%",
+    "Domestica 8A (~1.84 kW) - Eff. 89.1%",
     "Domestica 10A (~2.30 kW) - Eff. 91.3% (Schuko)",
-    "Domestica 12A (~2.76 kW) - Eff. 92.7% (Schuko)",
+    "Domestica 12A (~2.76 kW) - Eff. 92.7% (Benchmark MGY)",
     "Domestica 16A (~3.70 kW) - Eff. 92.7% (Limite contatore 3 kW)",
     "Domestica/Wallbox 32A (~7.40 kW) - Eff. 92.0% (Contatore 6+ kW)",
     "Pubblica Standard 16A Trifase (~11.00 kW) - Eff. 92.0%",
@@ -82,39 +82,33 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
     if fine <= inizio:
         st.error("La percentuale finale deve essere maggiore!")
     else:
-        # Calcolo energia e costi
+        # 1. Calcolo Energia e Costi
         kwh_netti = ((fine - inizio) / 100) * cap
         kwh_pagati = kwh_netti / eff
         costo = kwh_pagati * prezzo
 
-        # Limitazione fisica dell'auto per la ricarica AC Pubblica (Max 11 kW)
-        kw_ricarica_effettiva = kw
-        if "Pubblica Accelerata 32A" in profilo:
-            kw_ricarica_effettiva = 11.00
+        # Limite hardware dell'auto su colonnine AC da 22 kW (l'Inster accetta max 11 kW)
+        kw_ricarica = 11.00 if "Pubblica Accelerata 32A" in profilo else kw
+        kw_reali = kw_ricarica * eff
 
-        # Calcolo dei minuti reali punto per punto
-        minuti_totali = 0
-        for p in range(int(inizio), int(fine)):
-            kwh_singolo_percento = cap / 100
-            
-            # Curva di rallentamento protettiva
-            if p >= 85:
-                frazione = 0.42 if kw_ricarica_effettiva <= 22.0 else 0.22
-            elif p >= 80:
-                frazione = 0.70 if kw_ricarica_effettiva <= 22.0 else 0.45
+        # 2. Calcolo del Tempo con formula lineare + bilanciamento
+        ore_totali = kwh_netti / kw_reali
+
+        # Correzione empirica per il rallentamento finale (curva sopra l'80/85%)
+        if fine > 80:
+            quota_rallentata = (fine - max(80, inizio)) / 100
+            kwh_rallentati = quota_rallentata * cap
+            if kw_ricarica <= 22.0:
+                # Per AC: coefficiente calibrato sul benchmark 12A (66%->100% = 7h 50m)
+                ore_totali += (kwh_rallentati / kw_reali) * 0.442
             else:
-                frazione = 1.0
-                
-            # Potenza netta che entra effettivamente nelle celle
-            kw_reali_istantanei = kw_ricarica_effettiva * eff * frazione
-            
-            ore_percento = kwh_singolo_percento / kw_reali_istantanei
-            minuti_totali += ore_percento * 60
+                # Per DC: rallentamento molto più drastico dovuto alla curva termica delle colonnine rapide
+                ore_totali += (kwh_rallentati / kw_reali) * 1.5
 
-        minuti_totali = int(round(minuti_totali))
+        # Conversione finale al minuto senza perdite decimali
+        minuti_totali = int(round(ore_totali * 60))
         ore = minuti_totali // 60
         minuti = minuti_totali % 60
-        kw_reali = kw_ricarica_effettiva * eff
 
         st.divider()
         
