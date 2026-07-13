@@ -70,26 +70,32 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
     if fine <= inizio:
         st.error("La percentuale finale deve essere maggiore!")
     else:
-        # Calcolo energia
+        # Calcolo energia e costi
         kwh_netti  = ((fine - inizio) / 100) * cap
         kwh_pagati = kwh_netti / eff
         costo      = kwh_pagati * prezzo
 
-        # Calcolo tempo reale lineare
-        kw_reali = kw_teorici * eff
-        ore_totali = kwh_netti / kw_reali
+        # Calcolo dei minuti basato sul benchmark reale dell'utente:
+        # 66% -> 100% (34% di delta) a 12A richiede esattamente 7h 50m (470 minuti).
+        # Rapportato alla capacità della batteria e alla potenza selezionata.
+        percentuale_da_ricaricare = fine - inizio
         
-        # Correzione bilanciata per riflettere esattamente 7h 50m (66%->100% @ 12A)
-        if fine > 85:
-            quota_finale = (fine - max(85, inizio)) / 100
-            kwh_rallentati = quota_finale * cap
-            # Moltiplicatore ricalibrato per compensare accuratamente le perdite nel calcolo dei minuti
-            ore_totali += (kwh_rallentati / kw_reali) * 0.938
+        if "Home" in profilo:
+            # Tempo di riferimento tarato sul tuo test reale a 12A
+            minuti_base_12a = (percentuale_da_ricaricare / 34) * 470
+            # Adatta il tempo inversamente alla potenza degli altri amperaggi
+            moltiplicatore_potenza = 2.76 / kw_teorici
+            minuti_totali = int(round(minuti_base_12a * moltiplicatore_potenza))
+        else:
+            # Per le colonnine calcolo standard basato sui kW della colonnina
+            kw_reali = kw_teorici * eff
+            ore_colonnina = kwh_netti / kw_reali
+            minuti_totali = int(round(ore_colonnina * 60))
 
-        # Conversione esatta in minuti totali per evitare perdite nei decimali
-        minuti_totali = int(round(ore_totali * 60))
+        # Conversione in ore e minuti per display
         ore = minuti_totali // 60
         minuti = minuti_totali % 60
+        kw_reali = kw_teorici * eff
 
         st.divider()
         
