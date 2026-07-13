@@ -9,7 +9,6 @@ with st.sidebar:
     st.link_button("TikTok", "https://www.tiktok.com/@ocramgy76?lang=en")
     st.link_button("Facebook", "https://facebook.com/marcoginelli")
 
-# Tenta di caricare l'immagine se presente nella stessa cartella
 try:
     image = Image.open('logo MGY social.jpg')
     st.image(image, width=200)
@@ -21,37 +20,50 @@ st.write("Real Efficiency & Time Calculator - Calcolatore ricarica EV con effici
 
 cap = st.number_input("Capacita Batteria (kWh)", value=49.0, step=1.0)
 
-profilo = st.selectbox("Type - Tipo di ricarica", ["Home - Casa", "Charging Station - Colonnina (92% eff.)"])
+# Menu unico con tutti i profili richiesti
+opzioni_profilo = [
+    "Domestica 6A (~1.38 kW) - Eff. 85.5%",
+    "Domestica 8A (~1.84 kW) - Eff. 89.1%",
+    "Domestica 10A (~2.30 kW) - Eff. 91.3% (Schuko)",
+    "Domestica 12A (~2.76 kW) - Eff. 92.7% (Benchmark MGY)",
+    "Domestica 16A (~3.70 kW) - Eff. 92.7% (Limite contatore 3 kW)",
+    "Domestica/Wallbox 32A (~7.40 kW) - Eff. 92.0% (Contatore 6+ kW)",
+    "Pubblica Standard 16A Trifase (~11.00 kW) - Eff. 92.0%",
+    "Pubblica Accelerata 32A Trifase (~22.00 kW) - Eff. 92.0%",
+    "Fast DC (50 kW) - Eff. 95.0%",
+    "Ultra-Fast DC (100 kW) - Eff. 95.0%",
+    "Ultra-Fast DC (150+ kW) - Eff. 95.0%"
+]
 
-# Inizializzazione variabili potenza teorica
-kw_teorici = 0.0
+profilo = st.selectbox("Seleziona il tipo di ricarica", opzioni_profilo, index=3)
 
-if "Home" in profilo:
-    prezzo_default = 0.192
-
-    label_6  = "6A  (~1.38 kW) - Efficienza 85.5%"
-    label_8  = "8A  (~1.84 kW) - Efficienza 89.1%"
-    label_10 = "10A (~2.30 kW) - Efficienza 91.3%"
-    label_12 = "12A (~2.76 kW) - Efficienza 92.7%"
-
-    ampere_labels = [label_6, label_8, label_10, label_12]
-    ampere_eff    = [0.855,   0.891,   0.913,    0.927]
-    ampere_kw     = [1.38,    1.84,    2.30,     2.76]
-
-    ampere_scelta = st.selectbox("Charging Ampere - Ampere di ricarica", ampere_labels, index=1)
-    idx = ampere_labels.index(ampere_scelta)
-    eff = ampere_eff[idx]
-    kw_teorici = ampere_kw[idx]
-
-else:
-    prezzo_default = 0.81
-    eff = 0.92
-    # Per le colonnine chiediamo la potenza (es. 7, 11, 22 o DC)
-    kw_teorici = st.number_input("Potenza Colonnina (kW)", value=11.0, step=1.0)
+# Mappatura dati tecnici di default basati sulla scelta
+if "6A" in profilo:
+    kw, eff, prezzo_def = 1.38, 0.855, 0.192
+elif "8A" in profilo:
+    kw, eff, prezzo_def = 1.84, 0.891, 0.192
+elif "10A" in profilo:
+    kw, eff, prezzo_def = 2.30, 0.913, 0.192
+elif "12A" in profilo:
+    kw, eff, prezzo_def = 2.76, 0.927, 0.192
+elif "16A (~3.7" in profilo:
+    kw, eff, prezzo_def = 3.70, 0.927, 0.192
+elif "32A (~7.4" in profilo:
+    kw, eff, prezzo_def = 7.40, 0.920, 0.192
+elif "11.00 kW" in profilo:
+    kw, eff, prezzo_def = 11.00, 0.920, 0.65
+elif "22.00 kW" in profilo:
+    kw, eff, prezzo_def = 22.00, 0.920, 0.69
+elif "50 kW" in profilo:
+    kw, eff, prezzo_def = 50.00, 0.950, 0.85
+elif "100 kW" in profilo:
+    kw, eff, prezzo_def = 100.00, 0.950, 0.89
+else: # 150+ kW
+    kw, eff, prezzo_def = 150.00, 0.950, 0.89
 
 if "ultimo_profilo" not in st.session_state or st.session_state.ultimo_profilo != profilo:
     st.session_state.ultimo_profilo = profilo
-    st.session_state.prezzo_input = prezzo_default
+    st.session_state.prezzo_input = prezzo_def
 
 prezzo = st.number_input(
     "Real Price - Inserire Costo reale (EUR/kWh)",
@@ -70,51 +82,51 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
     if fine <= inizio:
         st.error("La percentuale finale deve essere maggiore!")
     else:
-        # Calcolo energia e costi
-        kwh_netti  = ((fine - inizio) / 100) * cap
+        kwh_netti = ((fine - inizio) / 100) * cap
         kwh_pagati = kwh_netti / eff
-        costo      = kwh_pagati * prezzo
+        costo = kwh_pagati * prezzo
 
-        # Calcolo dei minuti basato sul benchmark reale dell'utente:
-        # 66% -> 100% (34% di delta) a 12A richiede esattamente 7h 50m (470 minuti).
-        # Rapportato alla capacità della batteria e alla potenza selezionata.
         percentuale_da_ricaricare = fine - inizio
-        
-        if "Home" in profilo:
-            # Tempo di riferimento tarato sul tuo test reale a 12A
+
+        # Algoritmo di calcolo del tempo
+        if kw <= 22.0:
+            # Ricarica AC: Basata sul benchmark reale dei 12A (66%->100% in 470 min)
             minuti_base_12a = (percentuale_da_ricaricare / 34) * 470
-            # Adatta il tempo inversamente alla potenza degli altri amperaggi
-            moltiplicatore_potenza = 2.76 / kw_teorici
+            moltiplicatore_potenza = 2.76 / kw
             minuti_totali = int(round(minuti_base_12a * moltiplicatore_potenza))
         else:
-            # Per le colonnine calcolo standard basato sui kW della colonnina
-            kw_reali = kw_teorici * eff
-            ore_colonnina = kwh_netti / kw_reali
-            minuti_totali = int(round(ore_colonnina * 60))
+            # Ricarica DC: Calcolo lineare fino all'80%, poi rallentamento drastico delle celle
+            minuti_totali = 0
+            for p in range(int(inizio), int(fine)):
+                kwh_singolo_percento = cap / 100
+                if p >= 85:
+                    kw_dinamici = kw * 0.25  # Taglio forte per bilanciamento finale
+                elif p >= 80:
+                    kw_dinamici = kw * 0.50  # Primo step di rallentamento
+                else:
+                    kw_dinamici = kw
+                
+                ore_percento = kwh_singolo_percento / (kw_dinamici * eff)
+                minuti_totali += ore_percento * 60
+            
+            minuti_totali = int(round(minuti_totali))
 
-        # Conversione in ore e minuti per display
         ore = minuti_totali // 60
         minuti = minuti_totali % 60
-        kw_reali = kw_teorici * eff
+        kw_reali = kw * eff
 
         st.divider()
         
-        # Mostra i risultati principali
         c1, c2 = st.columns(2)
         with c1:
             st.metric("Costo Totale", f"EUR {costo:.2f}")
         with c2:
             st.metric("Tempo Stimato", f"{ore}h {minuti}m")
 
-        if "Home" in profilo:
-            dettaglio = "Home " + ampere_scelta + " - Efficienza " + str(round(eff * 100, 1)) + "%"
-        else:
-            dettaglio = f"Charging Station ({kw_teorici} kW) - Efficienza 92%"
-
         st.info(
             "Dettagli Tecnici:\n" +
-            "- Profilo: " + dettaglio + "\n" +
-            "- Energia netta in batteria: " + str(round(kwh_netti, 2)) + " kWh\n" +
-            "- Energia pagata alla rete: " + str(round(kwh_pagati, 2)) + " kWh\n" +
-            "- Potenza reale di carica: " + str(round(kw_reali, 2)) + " kW"
+            "- Modalità: " + profilo + "\n" +
+            "- Energia netta erogata: " + str(round(kwh_netti, 2)) + " kWh\n" +
+            "- Energia pagata (con perdite): " + str(round(kwh_pagati, 2)) + " kWh\n" +
+            "- Potenza di picco reale: " + str(round(kw_reali, 2)) + " kW"
         )
