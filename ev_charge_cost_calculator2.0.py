@@ -9,15 +9,22 @@ with st.sidebar:
     st.link_button("TikTok", "https://www.tiktok.com/@ocramgy76?lang=en")
     st.link_button("Facebook", "https://facebook.com/marcoginelli")
 
-image = Image.open('logo MGY social.jpg')
-st.image(image, width=200)
+# Nota: Assicurati che l'immagine sia nella stessa cartella dello script
+try:
+    image = Image.open('logo MGY social.jpg')
+    st.image(image, width=200)
+except:
+    pass
 
-st.title("EV CHARGE COST CALCULATOR powered by MGY")
-st.write("Real Efficency Calculator - Calcolatore ricarica EV con efficienza reale offerto da MGY")
+st.title("EV CHARGE COST & TIME CALCULATOR powered by MGY")
+st.write("Real Efficency & Time Calculator - Calcolatore ricarica EV con efficienza e tempi reali offerto da MGY")
 
 cap = st.number_input("Capacita Batteria (kWh)", value=49.0, step=1.0)
 
 profilo = st.selectbox("Type - Tipo di ricarica", ["Home - Casa", "Charging Station - Colonnina (92% eff.)"])
+
+# Inizializzazione variabili potenza teorica
+kw_teorici = 0.0
 
 if "Home" in profilo:
     prezzo_default = 0.192
@@ -29,14 +36,18 @@ if "Home" in profilo:
 
     ampere_labels = [label_6, label_8, label_10, label_12]
     ampere_eff    = [0.855,   0.891,   0.913,    0.927]
+    ampere_kw     = [1.38,    1.84,    2.30,     2.76]
 
     ampere_scelta = st.selectbox("Charging Ampere - Ampere di ricarica", ampere_labels, index=1)
     idx = ampere_labels.index(ampere_scelta)
     eff = ampere_eff[idx]
+    kw_teorici = ampere_kw[idx]
 
 else:
     prezzo_default = 0.81
     eff = 0.92
+    # Per le colonnine chiediamo la potenza (es. 7, 11, 22 o DC)
+    kw_teorici = st.number_input("Potenza Colonnina (kW)", value=11.0, step=1.0)
 
 if "ultimo_profilo" not in st.session_state or st.session_state.ultimo_profilo != profilo:
     st.session_state.ultimo_profilo = profilo
@@ -59,21 +70,36 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
     if fine <= inizio:
         st.error("La percentuale finale deve essere maggiore!")
     else:
+        # Calcolo energia
         kwh_netti  = ((fine - inizio) / 100) * cap
         kwh_pagati = kwh_netti / eff
         costo      = kwh_pagati * prezzo
 
+        # Calcolo tempo reale (Potenza netta immessa = kw prelevati * efficienza)
+        kw_reali = kw_teorici * eff
+        ore_totali = kwh_netti / kw_reali
+        
+        ore = int(ore_totali)
+        minuti = int((ore_totali - ore) * 60)
+
         st.divider()
-        st.metric("Costo Totale", "EUR " + str(round(costo, 2)))
+        
+        # Mostra i risultati principali
+        c1, c2 = st.columns(2)
+        with c1:
+            st.metric("Costo Totale", f"EUR {costo:.2f}")
+        with c2:
+            st.metric("Tempo Stimato", f"{ore}h {minuti}m")
 
         if "Home" in profilo:
             dettaglio = "Home " + ampere_scelta + " - Efficienza " + str(round(eff * 100, 1)) + "%"
         else:
-            dettaglio = "Charging Station - Efficienza 92%"
+            dettaglio = f"Charging Station ({kw_teorici} kW) - Efficienza 92%"
 
         st.info(
             "Dettagli Tecnici:\n" +
             "- Profilo: " + dettaglio + "\n" +
-            "- Energia netta: " + str(round(kwh_netti, 2)) + " kWh\n" +
-            "- Energia pagata (" + str(round(eff * 100, 1)) + "% eff): " + str(round(kwh_pagati, 2)) + " kWh"
+            "- Energia netta in batteria: " + str(round(kwh_netti, 2)) + " kWh\n" +
+            "- Energia pagata alla rete: " + str(round(kwh_pagati, 2)) + " kWh\n" +
+            "- Potenza reale di carica: " + str(round(kw_reali, 2)) + " kW"
         )
