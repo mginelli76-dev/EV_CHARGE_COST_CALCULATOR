@@ -20,7 +20,6 @@ st.write("Real Efficiency & Time Calculator - Calcolatore ricarica EV con effici
 
 cap = st.number_input("Capacita Batteria (kWh)", value=49.0, step=1.0, key="cap_unique_input")
 
-# Mappatura esatta dei profili ricarica
 profili_data = {
     "Domestica 6A (~1.38 kW) - Eff. 85.5%": {"kw": 1.38, "eff": 0.855, "prezzo": 0.192},
     "Domestica 8A (~1.84 kW) - Eff. 89.1%": {"kw": 1.84, "eff": 0.891, "prezzo": 0.192},
@@ -62,29 +61,35 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True, key="btn_u
     if fine <= inizio:
         st.error("La percentuale finale deve essere maggiore!")
     else:
-        # 1. Calcolo Energia e Costi
         kwh_netti = ((fine - inizio) / 100) * cap
         kwh_pagati = kwh_netti / eff
         costo = kwh_pagati * prezzo
 
-        # Limite hardware di bordo
         kw_ricarica = 11.00 if "22.00 kW" in profilo else kw
         kw_reali = kw_ricarica * eff
 
-        # 2. Calcolo del Tempo lineare pure
-        ore_totali = kwh_netti / kw_reali
+        # Calcolo del tempo diviso in due fasi reali
+        ore_totali = 0.0
 
-        # 3. Bilanciamento calibrato per la curva di rallentamento finale oltre l'80%
+        # Fase 1: ricarica lineare fino all'80%
+        if inizio < 80:
+            fine_lineare = min(80, fine)
+            kwh_lineari = ((fine_lineare - inizio) / 100) * cap
+            ore_totali += kwh_lineari / kw_reali
+
+        # Fase 2: crollo drastico della potenza dal 80% al 100%
         if fine > 80:
-            quota_critica = (fine - max(80, inizio)) / 100
-            kwh_finali = quota_critica * cap
+            inizio_fase2 = max(80, inizio)
+            quota_fase2 = (fine - inizio_fase2) / 100
+            kwh_fase2 = quota_fase2 * cap
+            
             if kw_ricarica <= 22.0:
-                # Calibrato per riflettere le 6h stimate dall'auto (da 74% a 100%)
-                ore_totali += (kwh_finali / cap) * 2.6
+                # In AC la potenza finale cala drasticamente a prescindere dai kW di picco iniziali
+                potenza_media_finale = min(kw_reali * 0.35, 1.25) 
+                ore_totali += kwh_fase2 / potenza_media_finale
             else:
-                ore_totali += (kwh_finali / kw_reali) * 1.5
+                ore_totali += (kwh_fase2 / kw_reali) * 2.5
 
-        # Conversione finale al minuto senza errori di denominazione
         minuti_totali = int(round(ore_totali * 60))
         ore = minuti_totali // 60
         minuti = minuti_totali % 60
