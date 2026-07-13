@@ -79,12 +79,12 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         kw_reali = kw_teorici * eff
         ore_totali = kwh_netti / kw_reali
         
-        # Correzione curva di rallentamento sopra l'85%
+        # Correzione curva di rallentamento sopra l'85% ricalibrata sui 7h 50m (66%->100% @ 12A)
         if fine > 85:
             quota_finale = (fine - max(85, inizio)) / 100
             kwh_rallentati = quota_finale * cap
-            # Aggiunge una penalità del 31% del tempo solo sulla quota di energia sopra l'85%
-            ore_totali += (kwh_rallentati / kw_reali) * 0.31
+            # Coefficiente adattato empiricamente per compensare il forte calo di potenza a fine carica
+            ore_totali += (kwh_rallentati / kw_reali) * 0.58
 
         ore = int(ore_totali)
         minuti = int((ore_totali - ore) * 60)
