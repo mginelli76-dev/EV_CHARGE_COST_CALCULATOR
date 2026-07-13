@@ -82,38 +82,41 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
     if fine <= inizio:
         st.error("La percentuale finale deve essere maggiore!")
     else:
+        # Calcolo energia e costi fisso per tutti
         kwh_netti = ((fine - inizio) / 100) * cap
         kwh_pagati = kwh_netti / eff
         costo = kwh_pagati * prezzo
 
-        percentuale_da_ricaricare = fine - inizio
+        minuti_totali = 0
+        kw_reali = kw * eff
 
-        # Algoritmo di calcolo del tempo
-        if kw <= 22.0:
-            # Ricarica AC: Basata sul benchmark reale dei 12A (66%->100% in 470 min)
-            minuti_base_12a = (percentuale_da_ricaricare / 34) * 470
-            moltiplicatore_potenza = 2.76 / kw
-            minuti_totali = int(round(minuti_base_12a * moltiplicatore_potenza))
-        else:
-            # Ricarica DC: Calcolo lineare fino all'80%, poi rallentamento drastico delle celle
-            minuti_totali = 0
-            for p in range(int(inizio), int(fine)):
-                kwh_singolo_percento = cap / 100
-                if p >= 85:
-                    kw_dinamici = kw * 0.25  # Taglio forte per bilanciamento finale
-                elif p >= 80:
-                    kw_dinamici = kw * 0.50  # Primo step di rallentamento
-                else:
-                    kw_dinamici = kw
-                
-                ore_percento = kwh_singolo_percento / (kw_dinamici * eff)
-                minuti_totali += ore_percento * 60
+        # Limitazione fisica di bordo dell'auto per la ricarica AC Pubblica (Max 11 kW per Inster)
+        kw_ricarica_effettiva = kw
+        if "Pubblica Accelerata 32A" in profilo:
+            kw_ricarica_effettiva = 11.00  # L'auto accetta massimo 11 kW in AC anche su colonnine da 22 kW
+            kw_reali = 11.00 * eff
+
+        # Calcolo dinamico minuto per minuto basato sui kW effettivi immessi
+        for p in range(int(inizio), int(fine)):
+            kwh_singolo_percento = cap / 100
             
-            minuti_totali = int(round(minuti_totali))
+            # Gestione della curva di rallentamento protettivo sopra l'80% e l'85%
+            if p >= 85:
+                frazione_potenza = 0.38 if kw_ricarica_effettiva <= 22.0 else 0.22
+            elif p >= 80:
+                frazione_potenza = 0.65 if kw_ricarica_effettiva <= 22.0 else 0.45
+            else:
+                frazione_potenza = 1.0
+                
+            kw_istantanei = kw_ricarica_effettiva * frazione_potenza * eff
+            ore_per_un_percento = kwh_singolo_percento / kw_istantanei
+            minuti_totali += ore_per_un_percento * 60
 
+        minuti_totali = int(round(minuti_totali))
+        
+        # CORREZIONE BUG: Variabili italianizzate e coerenti con la definizione iniziale
         ore = minuti_totali // 60
         minuti = minuti_totali % 60
-        kw_reali = kw * eff
 
         st.divider()
         
@@ -128,5 +131,5 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
             "- Modalità: " + profilo + "\n" +
             "- Energia netta erogata: " + str(round(kwh_netti, 2)) + " kWh\n" +
             "- Energia pagata (con perdite): " + str(round(kwh_pagati, 2)) + " kWh\n" +
-            "- Potenza di picco reale: " + str(round(kw_reali, 2)) + " kW"
+            "- Potenza reale di picco: " + str(round(kw_reali, 2)) + " kW"
         )
