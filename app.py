@@ -20,13 +20,13 @@ st.write("Real Efficiency & Time Calculator - Calcolatore ricarica EV con effici
 
 cap = st.number_input("Capacita Batteria (kWh)", value=49.0, step=1.0, key="cap_unique_input")
 
-# Mappatura dei profili ricarica con le nuove logiche di prezzo di default richieste
+# Mappatura dei profili con i nuovi prezzi di default (0.192 fino a 12A, 0.70 da 16A in su)
 profili_data = {
     "Domestica 6A (~1.38 kW) - Eff. 85.5%": {"kw": 1.38, "eff": 0.855, "prezzo": 0.192},
     "Domestica 8A (~1.84 kW) - Eff. 89.1%": {"kw": 1.84, "eff": 0.891, "prezzo": 0.192},
     "Domestica 10A (~2.30 kW) - Eff. 91.3% (Schuko)": {"kw": 2.30, "eff": 0.913, "prezzo": 0.192},
     "Domestica 12A (~2.76 kW) - Eff. 92.7% (Benchmark MGY)": {"kw": 2.76, "eff": 0.927, "prezzo": 0.192},
-    "Domestica 16A (~3.70 kW) - Eff. 92.7% (Limite contatore 3 kW)": {"kw": 3.70, "eff": 0.927, "prezzo": 0.192},
+    "Domestica 16A (~3.70 kW) - Eff. 92.7% (Limite contatore 3 kW)": {"kw": 3.70, "eff": 0.927, "prezzo": 0.70},
     "Domestica/Wallbox 32A (~7.40 kW) - Eff. 92.0% (Contatore 6+ kW)": {"kw": 7.40, "eff": 0.920, "prezzo": 0.70},
     "Pubblica Standard 16A Trifase (~11.00 kW) - Eff. 92.0%": {"kw": 11.00, "eff": 0.920, "prezzo": 0.70},
     "Pubblica Accelerata 32A Trifase (~22.00 kW) - Eff. 92.0%": {"kw": 22.00, "eff": 0.920, "prezzo": 0.70},
@@ -35,23 +35,30 @@ profili_data = {
     "Ultra-Fast DC (150+ kW) - Eff. 95.0%": {"kw": 150.00, "eff": 0.950, "prezzo": 0.70}
 }
 
-# index=1 corrisponde al profilo Domestica 8A (secondo elemento della lista)
+# Inizializzazione dello stato per la gestione dinamica del prezzo modificabile
+if "ultimo_profilo" not in st.session_state:
+    st.session_state.ultimo_profilo = list(profili_data.keys())[1]  # Default: Domestica 8A
+    st.session_state.prezzo_val = 0.192
+
 profilo = st.selectbox("Seleziona il tipo di ricarica", list(profili_data.keys()), index=1, key="profilo_unique_select")
 
 kw = profili_data[profilo]["kw"]
 eff = profili_data[profilo]["eff"]
 prezzo_def = profili_data[profilo]["prezzo"]
 
-if "ultimo_profilo" not in st.session_state or st.session_state.ultimo_profilo != profilo:
+# Se l'utente cambia il profilo dal menu, aggiorna il prezzo di default automaticamente
+if st.session_state.ultimo_profilo != profilo:
     st.session_state.ultimo_profilo = profilo
-    st.session_state.prezzo_input_val = prezzo_def
+    st.session_state.prezzo_val = prezzo_def
 
+# Campo prezzo: propone il default ma lascia l'utente libero di modificarlo
 prezzo = st.number_input(
     "Real Price - Inserire Costo reale (EUR/kWh)",
-    value=st.session_state.prezzo_input_val,
+    value=st.session_state.prezzo_val,
     format="%.3f",
-    key="prezzo_unique_input"
+    key="prezzo_input_field"
 )
+st.session_state.prezzo_val = prezzo  # Salva la modifica manuale dell'utente
 
 col1, col2 = st.columns(2)
 with col1:
@@ -86,7 +93,7 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True, key="btn_u
 
         # Conversione finale
         minuti_totali = int(round(ore_totali * 60))
-        ore = minuti_totali // 60
+        ore = minutes_totali = minuti_totali // 60
         minuti = minuti_totali % 60
 
         st.divider()
