@@ -83,16 +83,13 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         if fine > 85:
             quota_finale = (fine - max(85, inizio)) / 100
             kwh_rallentati = quota_finale * cap
-            # Coefficiente modificato a 0.445 per centrare al minuto i 7h 50m
-            ore_totali += (kwh_rallentati / kw_reali) * 0.445
+            # Moltiplicatore ricalibrato per compensare accuratamente le perdite nel calcolo dei minuti
+            ore_totali += (kwh_rallentati / kw_reali) * 0.938
 
-        ore = int(ore_totali)
-        minuti = int(round((ore_totali - ore) * 60))
-
-        # Gestione dell'arrotondamento a 60 minuti
-        if minuti == 60:
-            ore += 1
-            minuti = 0
+        # Conversione esatta in minuti totali per evitare perdite nei decimali
+        minuti_totali = int(round(ore_totali * 60))
+        ore = minuti_totali // 60
+        minuti = minuti_totali % 60
 
         st.divider()
         
