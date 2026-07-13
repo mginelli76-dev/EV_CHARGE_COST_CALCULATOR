@@ -22,10 +22,10 @@ cap = st.number_input("Capacita Batteria (kWh)", value=49.0, step=1.0)
 
 # Menu unico con tutti i profili richiesti
 opzioni_profilo = [
-    "Domestica 6A (~1.38 kW) - Eff. 85.5%",
-    "Domestica 8A (~1.84 kW) - Eff. 89.1%",
+    "Domestica 6A (~1.38 kW) - Eff. 85.5% (Schuko)",
+    "Domestica 8A (~1.84 kW) - Eff. 89.1% (Schuko)",
     "Domestica 10A (~2.30 kW) - Eff. 91.3% (Schuko)",
-    "Domestica 12A (~2.76 kW) - Eff. 92.7% (Benchmark MGY)",
+    "Domestica 12A (~2.76 kW) - Eff. 92.7% (Schuko)",
     "Domestica 16A (~3.70 kW) - Eff. 92.7% (Limite contatore 3 kW)",
     "Domestica/Wallbox 32A (~7.40 kW) - Eff. 92.0% (Contatore 6+ kW)",
     "Pubblica Standard 16A Trifase (~11.00 kW) - Eff. 92.0%",
@@ -82,41 +82,39 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
     if fine <= inizio:
         st.error("La percentuale finale deve essere maggiore!")
     else:
-        # Calcolo energia e costi fisso per tutti
+        # Calcolo energia e costi
         kwh_netti = ((fine - inizio) / 100) * cap
         kwh_pagati = kwh_netti / eff
         costo = kwh_pagati * prezzo
 
-        minuti_totali = 0
-        kw_reali = kw * eff
-
-        # Limitazione fisica di bordo dell'auto per la ricarica AC Pubblica (Max 11 kW per Inster)
+        # Limitazione fisica dell'auto per la ricarica AC Pubblica (Max 11 kW)
         kw_ricarica_effettiva = kw
         if "Pubblica Accelerata 32A" in profilo:
-            kw_ricarica_effettiva = 11.00  # L'auto accetta massimo 11 kW in AC anche su colonnine da 22 kW
-            kw_reali = 11.00 * eff
+            kw_ricarica_effettiva = 11.00
 
-        # Calcolo dinamico minuto per minuto basato sui kW effettivi immessi
+        # Calcolo dei minuti reali punto per punto
+        minuti_totali = 0
         for p in range(int(inizio), int(fine)):
             kwh_singolo_percento = cap / 100
             
-            # Gestione della curva di rallentamento protettivo sopra l'80% e l'85%
+            # Curva di rallentamento protettiva
             if p >= 85:
-                frazione_potenza = 0.38 if kw_ricarica_effettiva <= 22.0 else 0.22
+                frazione = 0.42 if kw_ricarica_effettiva <= 22.0 else 0.22
             elif p >= 80:
-                frazione_potenza = 0.65 if kw_ricarica_effettiva <= 22.0 else 0.45
+                frazione = 0.70 if kw_ricarica_effettiva <= 22.0 else 0.45
             else:
-                frazione_potenza = 1.0
+                frazione = 1.0
                 
-            kw_istantanei = kw_ricarica_effettiva * frazione_potenza * eff
-            ore_per_un_percento = kwh_singolo_percento / kw_istantanei
-            minuti_totali += ore_per_un_percento * 60
+            # Potenza netta che entra effettivamente nelle celle
+            kw_reali_istantanei = kw_ricarica_effettiva * eff * frazione
+            
+            ore_percento = kwh_singolo_percento / kw_reali_istantanei
+            minuti_totali += ore_percento * 60
 
         minuti_totali = int(round(minuti_totali))
-        
-        # CORREZIONE BUG: Variabili italianizzate e coerenti con la definizione iniziale
         ore = minuti_totali // 60
         minuti = minuti_totali % 60
+        kw_reali = kw_ricarica_effettiva * eff
 
         st.divider()
         
