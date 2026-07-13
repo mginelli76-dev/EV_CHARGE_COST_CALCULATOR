@@ -21,10 +21,10 @@ st.write("Real Efficiency & Time Calculator - Calcolatore ricarica EV con effici
 cap = st.number_input("Capacita Batteria (kWh)", value=49.0, step=1.0, key="cap_unique_input")
 
 profili_data = {
-    "Domestica 6A (~1.38 kW) - Eff. 85.5%": {"kw": 1.38, "eff": 0.855, "prezzo": 0.192},
-    "Domestica 8A (~1.84 kW) - Eff. 89.1%": {"kw": 1.84, "eff": 0.891, "prezzo": 0.192},
+    "Domestica 6A (~1.38 kW) - Eff. 85.5% (Schuko)": {"kw": 1.38, "eff": 0.855, "prezzo": 0.192},
+    "Domestica 8A (~1.84 kW) - Eff. 89.1% (Schuko)": {"kw": 1.84, "eff": 0.891, "prezzo": 0.192},
     "Domestica 10A (~2.30 kW) - Eff. 91.3% (Schuko)": {"kw": 2.30, "eff": 0.913, "prezzo": 0.192},
-    "Domestica 12A (~2.76 kW) - Eff. 92.7% (Benchmark MGY)": {"kw": 2.76, "eff": 0.927, "prezzo": 0.192},
+    "Domestica 12A (~2.76 kW) - Eff. 92.7%  (Schuko)": {"kw": 2.76, "eff": 0.927, "prezzo": 0.192},
     "Domestica 16A (~3.70 kW) - Eff. 92.7% (Limite contatore 3 kW)": {"kw": 3.70, "eff": 0.927, "prezzo": 0.192},
     "Domestica/Wallbox 32A (~7.40 kW) - Eff. 92.0% (Contatore 6+ kW)": {"kw": 7.40, "eff": 0.920, "prezzo": 0.192},
     "Pubblica Standard 16A Trifase (~11.00 kW) - Eff. 92.0%": {"kw": 11.00, "eff": 0.920, "prezzo": 0.65},
