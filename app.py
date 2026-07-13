@@ -73,15 +73,14 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True, key="btn_u
         # 2. Tempo base lineare puro
         ore_totali = kwh_netti / kw_reali
 
-        # 3. Aggiunta minuti di rallentamento fisso oltre l'80% (proporzionale a quanti punti percentuali si fanno sopra l'80)
+        # 3. Rallentamento calibrato al millimetro oltre l'80%
         if fine > 80:
             punti_oltre_80 = fine - max(80, inizio)
             
             if kw_ricarica <= 22.0:
-                # In AC aggiunge un extra proporzionale (circa 50 min totali per la fascia 80-100%)
-                ore_totali += (punti_oltre_80 / 20) * 0.84
+                # Regolato per centrare le 6h esatte su 74% -> 100%
+                ore_totali += (punti_oltre_80 / 20) * 1.02
             else:
-                # In DC il bilanciamento finale è molto più penalizzante
                 ore_totali += (punti_oltre_80 / 20) * 1.2
 
         # Conversione finale
