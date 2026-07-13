@@ -9,7 +9,7 @@ with st.sidebar:
     st.link_button("TikTok", "https://www.tiktok.com/@ocramgy76?lang=en")
     st.link_button("Facebook", "https://facebook.com/marcoginelli")
 
-# Nota: Assicurati che l'immagine sia nella stessa cartella dello script
+# Tenta di caricare l'immagine se presente nella stessa cartella
 try:
     image = Image.open('logo MGY social.jpg')
     st.image(image, width=200)
@@ -17,7 +17,7 @@ except:
     pass
 
 st.title("EV CHARGE COST & TIME CALCULATOR powered by MGY")
-st.write("Real Efficency & Time Calculator - Calcolatore ricarica EV con efficienza e tempi reali offerto da MGY")
+st.write("Real Efficiency & Time Calculator - Calcolatore ricarica EV con efficienza e tempi reali offerto da MGY")
 
 cap = st.number_input("Capacita Batteria (kWh)", value=49.0, step=1.0)
 
@@ -75,10 +75,17 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         kwh_pagati = kwh_netti / eff
         costo      = kwh_pagati * prezzo
 
-        # Calcolo tempo reale (Potenza netta immessa = kw prelevati * efficienza)
+        # Calcolo tempo reale lineare
         kw_reali = kw_teorici * eff
         ore_totali = kwh_netti / kw_reali
         
+        # Correzione curva di rallentamento sopra l'85%
+        if fine > 85:
+            quota_finale = (fine - max(85, inizio)) / 100
+            kwh_rallentati = quota_finale * cap
+            # Aggiunge una penalità del 31% del tempo solo sulla quota di energia sopra l'85%
+            ore_totali += (kwh_rallentati / kw_reali) * 0.31
+
         ore = int(ore_totali)
         minuti = int((ore_totali - ore) * 60)
 
