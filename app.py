@@ -89,15 +89,15 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         percentuale_da_ricaricare = fine - inizio
         minuti_totali = 0
 
-        # NUOVA LOGICA DI CALCOLO DEL TEMPO SEPARATA
-        if "Domestica" in profilo and kw <= 7.40:
-            # Calcolo basato sul benchmark reale dei 12A (66%->100% in 470 min) escalato sugli altri amperaggi domestici
+        # STRUTTURA DI CONTROLLO RICALIBRATA PER EVITARE FALSINI FILTRI TESTUALI
+        if kw <= 7.40:
+            # Ricarica Monofase lenta/domestica: proporzionale al tuo benchmark reale dei 12A
             minuti_base_12a = (percentuale_da_ricaricare / 34) * 470
             moltiplicatore_potenza = 2.76 / kw
             minuti_totali = int(round(minuti_base_12a * moltiplicatore_potenza))
             
-        elif "Pubblica" in profilo:
-            # Calcolo lineare per AC Trifase pubblica (11 kW e 22 kW) con aggiunta del bilanciamento celle sopra l'85%
+        elif kw <= 22.0:
+            # Ricarica AC Trifase (11 kW e 22 kW)
             kw_reali = kw * eff
             ore_base = kwh_netti / kw_reali
             minuti_totali = ore_base * 60
@@ -108,22 +108,21 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
             minuti_totali = int(round(minuti_totali))
             
         else:
-            # Ricarica Fast/Ultra-Fast DC: Calcolo dinamico punto per punto per simulare la curva di carica delle colonnine rapide
+            # Ricariche rapide Fast DC (50 kW+)
             for p in range(int(inizio), int(fine)):
                 kwh_singolo_percento = cap / 100
                 if p >= 85:
-                    kw_dinamici = kw * 0.25  # Taglio drastico protettivo finale
+                    kw_dinamici = kw * 0.25
                 elif p >= 80:
-                    kw_dinamici = kw * 0.50  # Primo scalino di rallentamento a fine curva
+                    kw_dinamici = kw * 0.50
                 else:
                     kw_dinamici = kw
                 
                 ore_percento = kwh_singolo_percento / (kw_dinamici * eff)
                 minuti_totali += ore_percento * 60
-            
             minuti_totali = int(round(minuti_totali))
 
-        # Conversione formattata
+        # Conversione e output finale
         ore = minuti_totali // 60
         minuti = minuti_totali % 60
         kw_reali = kw * eff
