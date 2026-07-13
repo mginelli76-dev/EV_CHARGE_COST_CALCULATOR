@@ -113,8 +113,10 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
             minuti_totali += ore_per_un_percento * 60
 
         minuti_totali = int(round(minuti_totali))
-        ore = minutes_totali // 60
-        minuti = minutes_totali % 60
+        
+        # CORREZIONE BUG: Variabili italianizzate e coerenti con la definizione iniziale
+        ore = minuti_totali // 60
+        minuti = minuti_totali % 60
 
         st.divider()
         
