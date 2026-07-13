@@ -87,22 +87,34 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
         costo = kwh_pagati * prezzo
 
         percentuale_da_ricaricare = fine - inizio
+        minuti_totali = 0
 
-        # Algoritmo di calcolo del tempo
-        if kw <= 22.0:
-            # Ricarica AC: Basata sul benchmark reale dei 12A (66%->100% in 470 min)
+        # NUOVA LOGICA DI CALCOLO DEL TEMPO SEPARATA
+        if "Domestica" in profilo and kw <= 7.40:
+            # Calcolo basato sul benchmark reale dei 12A (66%->100% in 470 min) escalato sugli altri amperaggi domestici
             minuti_base_12a = (percentuale_da_ricaricare / 34) * 470
             moltiplicatore_potenza = 2.76 / kw
             minuti_totali = int(round(minuti_base_12a * moltiplicatore_potenza))
+            
+        elif "Pubblica" in profilo:
+            # Calcolo lineare per AC Trifase pubblica (11 kW e 22 kW) con aggiunta del bilanciamento celle sopra l'85%
+            kw_reali = kw * eff
+            ore_base = kwh_netti / kw_reali
+            minuti_totali = ore_base * 60
+            if fine > 85:
+                quota_finale = (fine - max(85, inizio)) / 100
+                kwh_rallentati = quota_finale * cap
+                minuti_totali += (kwh_rallentati / kw_reali) * 0.45 * 60
+            minuti_totali = int(round(minuti_totali))
+            
         else:
-            # Ricarica DC: Calcolo lineare fino all'80%, poi rallentamento drastico delle celle
-            minuti_totali = 0
+            # Ricarica Fast/Ultra-Fast DC: Calcolo dinamico punto per punto per simulare la curva di carica delle colonnine rapide
             for p in range(int(inizio), int(fine)):
                 kwh_singolo_percento = cap / 100
                 if p >= 85:
-                    kw_dinamici = kw * 0.25  # Taglio forte per bilanciamento finale
+                    kw_dinamici = kw * 0.25  # Taglio drastico protettivo finale
                 elif p >= 80:
-                    kw_dinamici = kw * 0.50  # Primo step di rallentamento
+                    kw_dinamici = kw * 0.50  # Primo scalino di rallentamento a fine curva
                 else:
                     kw_dinamici = kw
                 
@@ -111,6 +123,7 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True):
             
             minuti_totali = int(round(minuti_totali))
 
+        # Conversione formattata
         ore = minuti_totali // 60
         minuti = minuti_totali % 60
         kw_reali = kw * eff
