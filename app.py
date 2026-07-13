@@ -1,5 +1,5 @@
 import streamlit as st
-from PIL Image import Image
+from PIL import Image
 
 with st.sidebar:
     st.title("Seguimi sui Social")
