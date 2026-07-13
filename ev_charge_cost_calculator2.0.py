@@ -67,25 +67,26 @@ if st.button("Calculate now - CALCOLA ORA", use_container_width=True, key="btn_u
         kwh_pagati = kwh_netti / eff
         costo = kwh_pagati * prezzo
 
-        # Limite hardware di bordo (es. Inster a 11 kW)
+        # Limite hardware di bordo
         kw_ricarica = 11.00 if "22.00 kW" in profilo else kw
         kw_reali = kw_ricarica * eff
 
         # 2. Calcolo del Tempo lineare pure
         ore_totali = kwh_netti / kw_reali
 
-        # 3. Bilanciamento per la curva di rallentamento finale oltre l'80%
+        # 3. Bilanciamento calibrato per la curva di rallentamento finale oltre l'80%
         if fine > 80:
             quota_critica = (fine - max(80, inizio)) / 100
             kwh_finali = quota_critica * cap
             if kw_ricarica <= 22.0:
-                ore_totali += (kwh_finali / cap) * 2.1
+                # Calibrato per riflettere le 6h stimate dall'auto (da 74% a 100%)
+                ore_totali += (kwh_finali / cap) * 2.6
             else:
                 ore_totali += (kwh_finali / kw_reali) * 1.5
 
-        # Conversione finale al minuto
+        # Conversione finale al minuto senza errori di denominazione
         minuti_totali = int(round(ore_totali * 60))
-        ore = minutes_totali = minuti_totali // 60
+        ore = minuti_totali // 60
         minuti = minuti_totali % 60
 
         st.divider()
